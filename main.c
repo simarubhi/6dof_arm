@@ -22,11 +22,14 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include "freertos.h"
+#include "queue.h"
+#include "pca9685_driver.h"
 #include "lcd_1602_driver.h"
 #include "mpu6050_driver.h"
-#include "pca9685_driver.h"
-#include "stdlib.h"
-#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,17 +39,19 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define RX_BUFFER_SIZE 64
+
 #define BASE_MAX_ANGLE 180
 #define BASE_MIN_ANGLE 0
 
-#define HINGE_ONE_MAX_ANGLE 110
-#define HINGE_ONE_MIN_ANGLE 80
+#define HINGE1_MAX_ANGLE 110
+#define HINGE1_MIN_ANGLE 80
 
-#define HINGE_TWO_MAX_ANGLE 110
-#define HINGE_TWO_MIN_ANGLE 80
+#define HINGE2_MAX_ANGLE 110
+#define HINGE2_MIN_ANGLE 80
 
-#define HINGE_THREE_MAX_ANGLE 110
-#define HINGE_THREE_MIN_ANGLE 80
+#define HINGE3_MAX_ANGLE 110
+#define HINGE3_MIN_ANGLE 80
 
 #define TWIST_MAX_ANGLE 130
 #define TWIST_MIN_ANGLE 30
@@ -54,13 +59,17 @@
 #define HAND_MAX_ANGLE 120
 #define HAND_MIN_ANGLE 40
 
-#define MAX_LINEAR_ADJUSTMENT 5
-#define MIN_LINEAR_ADJUSTMENT 1
 #define STATIC_ADJUSTMENT 3
 #define MIN_ANALOG_VALUE 20
 
-#define LEVEL_TOLERANCE 5.0
+#define LEVEL_TOLERANCE 5
 
+#define BASE_PCA_PIN 0
+#define HINGE1_PCA_PIN 3
+#define HINGE2_PCA_PIN 6
+#define HINGE3_PCA_PIN 9
+#define TWIST_PCA_PIN 12
+#define HAND_PCA_PIN 15
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -80,18 +89,24 @@ const osThreadAttr_t controlMotors_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for angleDisplay */
-osThreadId_t angleDisplayHandle;
-const osThreadAttr_t angleDisplay_attributes = {
-  .name = "angleDisplay",
+/* Definitions for displayAngle */
+osThreadId_t displayAngleHandle;
+const osThreadAttr_t displayAngle_attributes = {
+  .name = "displayAngle",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
 /* USER CODE BEGIN PV */
-uint8_t servo_angles[6] = {90, 90, 90, 90, 90, 90};
-char rx_buffer[10];  // Buffer to store received string
-uint8_t buffer_index = 0;   // Buffer index
-char received_char;
+QueueHandle_t joystick_data_queue;
+
+uint8_t base_angle = 90; // Z-axis
+uint8_t hinge1_angle = 90; // X-axis
+uint8_t hinge2_angle = 90; // Y-aixs
+uint8_t hinge3_angle = 90; // Y-hat
+uint8_t twist_angle = 0; // X-hat
+uint8_t hand_value = 0; // Slider
+
+char mpu_angle_string[16];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -99,8 +114,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
-void StartMotorControl(void *argument);
-void StartAngleDisplay(void *argument);
+void StartControlMotors(void *argument);
+void StartDisplayAngle(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -108,7 +123,93 @@ void StartAngleDisplay(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+int8_t clamp(int8_t value, int8_t min_val, int8_t max_val)
+{
+    if (value < min_val) return min_val;
+    if (value > max_val) return max_val;
+    return value;
+}
 
+int8_t map_value(int8_t value, int8_t min_in, int8_t max_in, int8_t min_out, int8_t max_out)
+{
+    // Scale x from [in_min, in_max] to [out_min, out_max]
+    return (value - min_in) * (max_out - min_out) / (max_in - min_in) + min_out;
+}
+
+void update_motor_pos(char *data) // Data = "x:y:z:slider:xhat:yhat"
+{
+	// X-axis | Hinge 1
+	char *token = strtok(data, ":");
+	if (token != NULL)
+	{
+		int8_t x_adjust = atoi(token);
+		if (abs(x_adjust) >= MIN_ANALOG_VALUE) hinge1_angle = clamp(hinge1_angle += x_adjust, HINGE1_MIN_ANGLE, HINGE1_MAX_ANGLE);
+	}
+
+	// Y-axis | Hinge 2
+	token = strtok(NULL, ":");
+	if (token != NULL)
+	{
+		int8_t y_adjust = atoi(token);
+		if (abs(y_adjust) >= MIN_ANALOG_VALUE) hinge2_angle = clamp(hinge2_angle += y_adjust, HINGE2_MIN_ANGLE, HINGE2_MAX_ANGLE);
+	}
+
+	// Z-axis | Base
+	token = strtok(NULL, ":");
+	if (token != NULL)
+	{
+		int8_t z_adjust = atoi(token);
+		if (abs(z_adjust) >= MIN_ANALOG_VALUE) base_angle = clamp(base_angle += z_adjust, BASE_MIN_ANGLE, BASE_MAX_ANGLE);
+	}
+
+	// Slider | Hand
+	token = strtok(NULL, ":");
+	if (token != NULL)
+	{
+		hand_value = map_value(atoi(token), 0, 100, HAND_MIN_ANGLE, HAND_MAX_ANGLE);
+	}
+
+	// X-hat | Twist
+	token = strtok(NULL, ":");
+	if (token != NULL)
+	{
+		int8_t xhat_adjust = atoi(token) * STATIC_ADJUSTMENT;
+		twist_angle = clamp(twist_angle += xhat_adjust, TWIST_MIN_ANGLE, TWIST_MAX_ANGLE);
+	}
+
+	// Y-hat | Hinge 3
+	token = strtok(NULL, ":");
+	if (token != NULL)
+	{
+		int8_t yhat_adjust = atoi(token) * STATIC_ADJUSTMENT;
+		hinge3_angle = clamp(hinge3_angle += yhat_adjust, HINGE3_MIN_ANGLE, HINGE3_MAX_ANGLE);
+	}
+
+	pca9685_setservo_angle(BASE_PCA_PIN, base_angle);
+	pca9685_setservo_angle(HINGE1_PCA_PIN, hinge1_angle);
+	pca9685_setservo_angle(HINGE2_PCA_PIN, hinge2_angle);
+	pca9685_setservo_angle(HINGE3_PCA_PIN, hinge3_angle);
+	pca9685_setservo_angle(TWIST_PCA_PIN, twist_angle);
+	pca9685_setservo_angle(HAND_PCA_PIN, hand_value);
+}
+
+void display_angle_lcd(int8_t angle)
+{
+	if (abs(angle) <= LEVEL_TOLERANCE)
+	{
+		sprintf(mpu_angle_string, "Level!");
+		clear_lcd();
+		set_lcd_cursor(0, 0);
+		send_lcd_string(mpu_angle_string);
+	}
+	else
+	{
+		sprintf(mpu_angle_string, "%d°", angle);
+		clear_lcd();
+		set_lcd_cursor(0, 0);
+		send_lcd_string(mpu_angle_string);
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -143,6 +244,14 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+  mpu6050_init(&hi2c1);
+
+  joystick_data_queue = xQueueCreate(5, RX_BUFFER_SIZE);
+  if (joystick_data_queue == NULL) {
+      // Handle queue creation failure
+      while (1);
+  }
+
 
   /* USER CODE END 2 */
 
@@ -167,10 +276,10 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of controlMotors */
-  controlMotorsHandle = osThreadNew(StartMotorControl, NULL, &controlMotors_attributes);
+  controlMotorsHandle = osThreadNew(StartControlMotors, NULL, &controlMotors_attributes);
 
-  /* creation of angleDisplay */
-  angleDisplayHandle = osThreadNew(StartAngleDisplay, NULL, &angleDisplay_attributes);
+  /* creation of displayAngle */
+  displayAngleHandle = osThreadNew(StartDisplayAngle, NULL, &displayAngle_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -348,162 +457,79 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-int8_t clamp(int8_t value, int8_t min_val, int8_t max_val) {
-    if (value < min_val) return min_val;
-    if (value > max_val) return max_val;
-    return value;
-}
-
-int8_t linear_adjustment(int8_t value) {
-	value = clamp(value, -100, 100);
-
-    int8_t adjustment = (abs(value) - MIN_ANALOG_VALUE) * (MAX_LINEAR_ADJUSTMENT - MIN_LINEAR_ADJUSTMENT) / (100 - MIN_ANALOG_VALUE) + 1;
-
-    // Apply the sign of the original value
-    return value < 0 ? -adjustment : adjustment;
-}
-
-int8_t map_value(int8_t value, int8_t min_in, int8_t max_in, int8_t min_out, int8_t max_out) {
-    // Scale x from [in_min, in_max] to [out_min, out_max]
-    return (value - min_in) * (max_out - min_out) / (max_in - min_in) + min_out;
-}
-
-void update_servo_angles(uint8_t z_base, uint8_t x_hinge1, uint8_t y_hinge2, uint8_t hat_y_hinge3, uint8_t hat_x_twist, uint8_t slider_hand)
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    // Adjust base angle using linear adjustment
-    if (abs(z_base) >= 20) // Only apply adjustment if outside the dead zone
-    {
-        int adjustment = linear_adjustment(z_base);
-        servo_angles[0] = clamp(servo_angles[0] + adjustment, BASE_MIN_ANGLE, BASE_MAX_ANGLE);
-    }
+	static char rx_buffer[RX_BUFFER_SIZE];
+	static uint8_t buffer_index = 0;
 
-    // Hinge 1
-    if (abs(x_hinge1) >= 20)
-    {
-        int adjustment = linear_adjustment(x_hinge1);
-        servo_angles[1] = clamp(servo_angles[1] + adjustment, HINGE_ONE_MIN_ANGLE, HINGE_ONE_MAX_ANGLE);
-    }
+	char received_char;
 
-    // Hinge 2
-    if (abs(y_hinge2) >= 20)
-    {
-        int adjustment = linear_adjustment(y_hinge2);
-        servo_angles[2] = clamp(servo_angles[2] + adjustment, HINGE_TWO_MIN_ANGLE, HINGE_TWO_MAX_ANGLE);
-    }
+	HAL_UART_Receive(&huart2, (uint8_t*)&received_char, 1, HAL_MAX_DELAY);
 
-    // Adjust hinge 3 angle based on hat_y
-    servo_angles[3] = clamp(servo_angles[3] + (hat_y_hinge3 * STATIC_ADJUSTMENT), HINGE_THREE_MIN_ANGLE, HINGE_THREE_MAX_ANGLE);
+	if (received_char == '\n')
+	{
+		rx_buffer[buffer_index] = '\0';
+		buffer_index = 0;
 
-    // Adjust twist angle based on hat_x
-    servo_angles[4] = clamp(servo_angles[4] + (hat_x_twist * STATIC_ADJUSTMENT), TWIST_MIN_ANGLE, TWIST_MAX_ANGLE);
-
-    // Set hand angle equal to slider
-    servo_angles[5] = clamp(map_value(slider_hand, 0, 100, HAND_MIN_ANGLE, HAND_MAX_ANGLE), HAND_MIN_ANGLE, HAND_MAX_ANGLE);
-
-    // Update all servo motors
-    for (uint8_t i = 0; i < 6; i++)
-    {
-    	pca9685_setservo_angle(i, (float)servo_angles[i]);
-    }
-}
-
-void process_serial_input(char *input) {
-  uint8_t x, y, z, slider, hat_x, hat_y;
-
-  if (sscanf(input, "%hhu,%hhu,%hhu,%hhu,%hhu,%hhu", &x, &y, &z, &slider, &hat_x, &hat_y) == 6)
-  {
-	  update_servo_angles(z, x, y, hat_y, hat_x, slider);
-  }
-
+		xQueueSend(joystick_data_queue, &rx_buffer, portMAX_DELAY);
+	}
+	else if (buffer_index < RX_BUFFER_SIZE - 1)
+	{
+		rx_buffer[buffer_index++] = received_char;
+	}
 }
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartMotorControl */
+/* USER CODE BEGIN Header_StartControlMotors */
 /**
   * @brief  Function implementing the controlMotors thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartMotorControl */
-void StartMotorControl(void *argument)
+/* USER CODE END Header_StartControlMotors */
+void StartControlMotors(void *argument)
 {
-  /* USER CODE BEGIN 5 */
+	/* USER CODE BEGIN 5 */
+	char joystick_data[RX_BUFFER_SIZE];
 
-  pca9685_init(&hi2c1, 50);
-  /* Infinite loop */
-  for(;;)
-  {
-	  if (HAL_UART_Receive(&huart2, (uint8_t*)&received_char, 1, HAL_MAX_DELAY) == HAL_OK)
-	  {
-    	  if (received_char == '\n')
-    	  {
-              // End of string, process the input
-              rx_buffer[buffer_index] = '\0';      // Null-terminate the string
-              process_serial_input(rx_buffer);  // Process the string
-              buffer_index = 0;                    // Reset buffer index
-          }
-    	  else if (buffer_index < sizeof(rx_buffer) - 1)
-          {
-              // Append character to buffer if there's space
-              rx_buffer[buffer_index++] = received_char;
-          }
-      }
-
-    osDelay(1);
-  }
-  /* USER CODE END 5 */
+	/* Infinite loop */
+	for(;;)
+	{
+		if (xQueueReceive(joystick_data_queue, &joystick_data, portMAX_DELAY) == pdPASS) update_motor_pos(joystick_data);
+		osDelay(1);
+	}
+	/* USER CODE END 5 */
 }
 
-/* USER CODE BEGIN Header_StartAngleDisplay */
+/* USER CODE BEGIN Header_StartDisplayAngle */
 /**
-* @brief Function implementing the angleDisplay thread.
+* @brief Function implementing the displayAngle thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartAngleDisplay */
-void StartAngleDisplay(void *argument)
+/* USER CODE END Header_StartDisplayAngle */
+void StartDisplayAngle(void *argument)
 {
-  /* USER CODE BEGIN StartAngleDisplay */
-  init_lcd(&hi2c1);
-  set_lcd_cursor(0, 0);
-  send_lcd_string("Initializing...");
-  set_lcd_cursor(1, 0);
-  send_lcd_string("Please wait!");
-  HAL_Delay(2000);
-  clear_lcd();
+	/* USER CODE BEGIN StartDisplayAngle */
+	float accelerometer_data[3];
+	int8_t angle;
 
-  mpu6050_init(&hi2c1);
-  char buffer[30];
-  float acceleration[3];
-  float angle;
+	/* Infinite loop */
+	for(;;)
+	{
+		mpu6050_get_accel(accelerometer_data);
 
-  /* Infinite loop */
-  for(;;)
-  {
-	  mpu6050_get_accel(acceleration);
+		float x = accelerometer_data[0];
+		float y = accelerometer_data[1];
+		float z = accelerometer_data[2];
 
-	  float x = acceleration[0];
-	  float y = acceleration[1];
-	  float z = acceleration[2];
+		angle = (int8_t)(atan2(z, sqrt(x * x + y * y)) * 180.0 / M_PI );
 
-	  angle = atan(z / sqrt(x * x + y * y)) * (180.0 / M_PI);
+		display_angle_lcd(angle);
 
-	  if (fabs(angle) < LEVEL_TOLERANCE) // Consider level if angle is within set degrees
-	  {
-	      sprintf((char *)buffer, "Level\r\n");
-	  }
-	  else
-	  {
-	      sprintf((char *)buffer, "Angle: %.2f°\r\n", angle);
-	  }
-
-	clear_lcd();
-	set_lcd_cursor(0, 0);
-	send_lcd_string(buffer);
-
-    osDelay(10);
-  }
-  /* USER CODE END StartAngleDisplay */
+		osDelay(100);
+	}
+	/* USER CODE END StartDisplayAngle */
 }
 
 /**
