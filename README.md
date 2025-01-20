@@ -9,6 +9,14 @@
 * MPU6050 accelerometer driver is functional [Repo](https://github.com/simarubhi/MPU6050_Driver_STM32)
 * PCA9685 motor driver is functional [Repo](https://github.com/simarubhi/PCA9685_Driver_STM32)
 * Currently, testing, formatting, polishing, and presenting finished project
+* Free RTOS needs to be restructured to work properly
+* Video below of latest progress update
+
+<div align="center">
+      <a href="https://www.youtube.com/watch?v=ikd64a26juY">
+         <img src="https://img.youtube.com/vi/ikd64a26juY/0.jpg" style="width: 600px;">
+      </a>
+</div>
 
 
 ## Current Progress
@@ -16,5 +24,5 @@
 2. LCD 1602 driver _DONE_
 3. MPU6050 driver _DONE_
 4. PCA8695 driver _DONE_
-5. FreeRTOS _DONE_
+5. FreeRTOS _IN PROGRESS_
 6. Presentation, documentation, formatting, etc. _IN PROGRESS_
