@@ -41,14 +41,14 @@
 /* USER CODE BEGIN PD */
 #define RX_BUFFER_SIZE 64
 
-#define BASE_MAX_ANGLE 110
-#define BASE_MIN_ANGLE 80
+#define BASE_MAX_ANGLE 130
+#define BASE_MIN_ANGLE 50
 
-#define HINGE1_MAX_ANGLE 130
-#define HINGE1_MIN_ANGLE 30
+#define HINGE1_MAX_ANGLE 150
+#define HINGE1_MIN_ANGLE 20
 
-#define HINGE2_MAX_ANGLE 130
-#define HINGE2_MIN_ANGLE 30
+#define HINGE2_MAX_ANGLE 140
+#define HINGE2_MIN_ANGLE 60
 
 #define HINGE3_MAX_ANGLE 150
 #define HINGE3_MIN_ANGLE 30
@@ -58,8 +58,8 @@
 #define TWIST_MIN_ANGLE 0
 #define TWIST_STATIC_ADJUSTMENT 5
 
-#define HAND_MAX_ANGLE 110
-#define HAND_MIN_ANGLE 50
+#define HAND_MAX_ANGLE 107
+#define HAND_MIN_ANGLE 45
 
 #define MAX_DYNAMIC_ADJUSTMENT 5
 #define MIN_DYNAMIC_ADJUSTMENT -5
@@ -204,9 +204,11 @@ void update_motor_pos(char *data) // Data = "x:y:z:slider:xhat:yhat"
 		if (abs(yhat_adjust) > 0) hinge3_angle = clamp(hinge3_angle += yhat_adjust, HINGE3_MIN_ANGLE, HINGE3_MAX_ANGLE);
 	}
 
-//	pca9685_setservo_angle(BASE_PCA_PIN, base_angle);
-//	pca9685_setservo_angle(HINGE1_PCA_PIN, hinge1_angle);
-//	pca9685_setservo_angle(HINGE2_PCA_PIN, hinge2_angle);
+	// ADD SO ONLY UPDATE IF VALUE HAS CHANGED!!!
+
+	pca9685_setservo_angle(BASE_PCA_PIN, base_angle);
+	pca9685_setservo_angle(HINGE1_PCA_PIN, hinge1_angle);
+	pca9685_setservo_angle(HINGE2_PCA_PIN, hinge2_angle);
 	pca9685_setservo_angle(HINGE3_PCA_PIN, hinge3_angle);
 	pca9685_setservo_angle(TWIST_PCA_PIN, twist_angle);
 	pca9685_setservo_angle(HAND_PCA_PIN, hand_value);
