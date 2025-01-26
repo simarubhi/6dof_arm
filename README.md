@@ -17,6 +17,7 @@
          <img src="https://img.youtube.com/vi/ikd64a26juY/0.jpg" style="width: 600px;">
       </a>
 </div>
+* All axis calibration is now done, FreeRTOS is now being restructured to work properly
 
 
 ## Current Progress
