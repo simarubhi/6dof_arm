@@ -5,7 +5,7 @@
 
 ## Current Status
 
-Check out updates in the [update log](https://github.com/simarubhi/6dof_arm/update_log)!
+Check out updates in the [update log](/update_log)!
 
 ## Project Goals
 
