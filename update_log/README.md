@@ -1,8 +1,15 @@
 # Update Log
 
-## Feb 16 - Stage 2 Started
+## March 5, 2025
 
-## Feb 22
+-   Adjusted the 3D strain wave gearbox model, optimizing for cost, component capability, and FDM 3D printing.
+-   Testing and adjustments of model are ongoing currently.
+
+<img src="./docs/march05-2025-strain-wave-firstprint.jpg" style="width: 300px" alt="general structure"/>
+
+Updated initial design for 3D printing tolerance testing. I'm currently planning to make the final version closer to my original design as in theory, it should be more reliable.
+
+## February 22, 2025
 
 -   Worked on defining problem/project definition, general design, and required materials.
 -   Looked at getting inspiration and ideas from existing solutions.
@@ -10,7 +17,7 @@
 
 ### General Structure
 
-<img src="./docs/feb22-2025-general-structure.jpg" style="width: 500px" alt="general structure"/>
+<img src="./docs/feb22-2025-general-structure.jpg" style="width: 300px" alt="general structure"/>
 
 This is the general blueprint of the arm. The design decision are are the following:
 
@@ -21,3 +28,5 @@ Steppers motors will be used for their superior accuracy compared to servo motor
 <img src="./docs/feb22-2025-strainwave-prototype.jpg" style="width: 300px" alt="first strain wave gearbox design"/>
 
 This design is not optimized for 3D printing and a new iteration of the gearbox suitable for 3D printing prototyping is nearly finished. The strain wave gearbox was chosen for it's quiet operation, minimal backlash, compact form factor, and high gear reduction.
+
+## February 16, 2025 - Stage 2 Started
