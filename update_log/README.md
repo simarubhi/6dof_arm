@@ -1,5 +1,13 @@
 # Update Log
 
+## March 6, 2025
+
+-   First test fit complete. The circular spline and flex spline split was very good. The output spline diameter needs to be smaller. The wave generator should be lower to make proper contact and I'm considering using smaller bearings (3mm instead of 5mm) and having 3 on each side for more tooth contact.
+
+-   Overall the drive is working correctly.
+
+<img src="./docs/march06-20205-firstprint.jpg" style="width: 300px" alt="general structure"/>
+
 ## March 5, 2025
 
 -   Adjusted the 3D strain wave gearbox model, optimizing for cost, component capability, and FDM 3D printing.
