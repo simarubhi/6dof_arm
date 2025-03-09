@@ -1,5 +1,11 @@
 # Update Log
 
+## March 8, 2025
+
+-   Did some more test fits keeping the same general design for the time being. It seems that the output spline's dimensions are not completely right at the moment.
+-   After some research it seems that making the flex or output spline have slight thinner teeth (more gap between teeth) may fix the issue.
+-   Currently working on a slightly new test design that will use 3mm bearings instead of 5mm bearings, as well as having a more stable output spline that doesn't try to pop out.
+
 ## March 6, 2025
 
 -   First test fit complete. The circular spline and flex spline split was very good. The output spline diameter needs to be smaller. The wave generator should be lower to make proper contact and I'm considering using smaller bearings (3mm instead of 5mm) and having 3 on each side for more tooth contact.
