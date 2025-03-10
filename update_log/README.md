@@ -1,5 +1,14 @@
 # Update Log
 
+## March 9, 2025
+
+-   Remodeled the entire gearbox (keeping the same design) after observing multiple issues in the previous versions.
+    -   The stepper CAD model I was using in Fusion 360 was slightly different causing the bearings to be higher than intended.
+    -   I didn't leave enough room in the circular spline for the flex spline in stretch enough to mesh with the output spline.
+    -   Both of the above issues were causing the flex spline to slowly climb out of the circular spline.
+-   Gears should mesh properly now (hopefully). I also adjusted the print overall to be more suited for 3D printing.
+-   Ran out of time, not able to test yet.
+
 ## March 8, 2025
 
 -   Did some more test fits keeping the same general design for the time being. It seems that the output spline's dimensions are not completely right at the moment.
