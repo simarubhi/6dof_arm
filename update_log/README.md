@@ -1,5 +1,13 @@
 # Update Log
 
+# March 11, 2025
+
+-   Over the past couple days I did a lot of test prints and now have tolerances that work.
+-   Designed the first output spline with a mounting plate.
+-   Now need to work on writing (or temporarily finding) a driver for the TMC 2209 stepper motor with a STM32.
+
+<img src="./docs/march11-2025-firstplate.jpg" style="width: 300px" alt="assembly with mounting plate"/>
+
 ## March 9, 2025
 
 -   Remodeled the entire gearbox (keeping the same design) after observing multiple issues in the previous versions.
@@ -21,14 +29,14 @@
 
 -   Overall the drive is working correctly.
 
-<img src="./docs/march06-20205-firstprint.jpg" style="width: 300px" alt="general structure"/>
+<img src="./docs/march06-2025-firstprint.jpg" style="width: 300px" alt="first picture"/>
 
 ## March 5, 2025
 
 -   Adjusted the 3D strain wave gearbox model, optimizing for cost, component capability, and FDM 3D printing.
 -   Testing and adjustments of model are ongoing currently.
 
-<img src="./docs/march05-2025-strain-wave-firstprint.jpg" style="width: 300px" alt="general structure"/>
+<img src="./docs/march05-2025-strain-wave-firstprint.jpg" style="width: 300px" alt="first print"/>
 
 Updated initial design for 3D printing tolerance testing. I'm currently planning to make the final version closer to my original design as in theory, it should be more reliable.
 
