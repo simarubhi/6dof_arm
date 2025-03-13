@@ -1,5 +1,10 @@
 # Update Log
 
+# March 12, 2025
+
+-   After inspecting the flex spline closer, I noticed small gaps in some on parallel sides of the ring. This is likely due to the infill pattern and limited area between the teeth and inner diameter. In a recent version I made the flex spline thinner as the wave generator was deforming it too much. Now i will proportionally make the flex spline thicker and wave generator shorter. This will not only decrease the chances of less densely packed infill, but also increase rigidity in the flex spline which is desirable to avoid unwanted twisting.
+-   Wrote a simple stepper-direction driver for the TMC2209 and a STM32 producing PWM signals. Testing will begin soon.
+
 # March 11, 2025
 
 -   Over the past couple days I did a lot of test prints and now have tolerances that work.
