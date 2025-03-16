@@ -1,5 +1,12 @@
 # Update Log
 
+# March 15, 2025
+
+-   After a couple days of test fitting the components, the current design is working well with the motor. Last component to optimize is the flex spline. I am currently trying a higher infill density, more walls, and also changed the pattern to concentric. I wasn't able to test the new flex spline design today.
+-   I also added 3D printed washers to the bearing assemblies when now allow me to tighten the screws and nuts all the way getting rid of unwanted vibrations.
+-   I ended up bothering with the STM32 driver for the TMC2209 as I will write the UART version soon. Instead I used a 3 in 1 multimeter function generator which was decent but not a very stable way of testing. The STM32 UART version will be more consistent and allow me to accurately evaluate the gearbox.
+-   I'll upload a video of the working drive once I'm happy with the stability. (pre torque limit testing)
+
 # March 12, 2025
 
 -   After inspecting the flex spline closer, I noticed small gaps in some on parallel sides of the ring. This is likely due to the infill pattern and limited area between the teeth and inner diameter. In a recent version I made the flex spline thinner as the wave generator was deforming it too much. Now i will proportionally make the flex spline thicker and wave generator shorter. This will not only decrease the chances of less densely packed infill, but also increase rigidity in the flex spline which is desirable to avoid unwanted twisting.
