@@ -1,5 +1,10 @@
 # Update Log
 
+# March 20, 2025
+
+-   Currently working on designing a torque and longevity testing rig for the gearbox.
+-   Had to order new stepper drivers as the old ones were accidentally shorted (will not be using breadboards moving forward).
+
 # March 15, 2025
 
 -   After a couple days of test fitting the components, the current design is working well with the motor. Last component to optimize is the flex spline. I am currently trying a higher infill density, more walls, and also changed the pattern to concentric. I wasn't able to test the new flex spline design today.
