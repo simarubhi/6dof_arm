@@ -9,13 +9,10 @@ Check out updates in the [update log](/update_log)!
 
 ### Latest Update
 
-#### March 20, 2025
+# April 17, 2025
 
--   Currently working on designing a torque and longevity testing rig for the gearbox.
--   Had to order new stepper drivers as the old ones were accidentally shorted (will not be using breadboards moving forward).
-
-<img src="update_log/docs/march11-2025-firstplate.jpg" style="width: 300px" alt="assembly with mounting plate"/><br>
-Photo from March 11, 2025. Gearbox test assembly with mounting plate.
+-   After a long break I worked on some redesigns of the gearbox that should reduce the size and increase performance.
+-   In the coming days I'll be working on the CAD model.
 
 ## Project Goals
 

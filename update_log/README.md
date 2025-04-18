@@ -1,5 +1,10 @@
 # Update Log
 
+# April 17, 2025
+
+-   After a long break I worked on some redesigns of the gearbox that should reduce the size and increase performance.
+-   In the coming days I'll be working on the CAD model.
+
 # March 20, 2025
 
 -   Currently working on designing a torque and longevity testing rig for the gearbox.
